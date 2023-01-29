@@ -1,0 +1,19 @@
+{% from "forms/_formhelper.html" import render_field, render_button %}
+
+<form action="{{ url_for('homepage.index') }}" method="POST" enctype="multipart/form-data">
+    {{ form.hidden_tag() }}
+    {{ form.csrf_token }}
+    <div class="form-floating mb-3">
+        {{ render_field(form.inputName, class='form-control', placeholder='Super Awesome Name',
+        id="nameHelp") }}
+        <div id="nameHelp" class="form-text">We'll never share your personal info with anyone else.</div>
+    </div>
+    <div class="form-floating mb-3">
+        {{ render_field(form.inputImage, class='form-control', placeholder='Super Awesome Face',
+        id="imageHelp") }}
+        <div id="imageHelp" class="form-text">Image should have a recognisible face structure.</div>
+    </div>
+    <div class="col-12 d-flex">
+        {{ render_button(form.submit, class='btn btn-info', value='Submit') }}
+    </div>
+</form>

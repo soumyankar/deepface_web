@@ -1,0 +1,12 @@
+{% extends 'base.html' %}
+
+{% block head %}
+{% endblock %}
+
+{% block container %}
+<h1>Welcome to {{ config.BANNER_APP_NAME }}! </h1>
+<p>A simplistic web interface to the {{ config.BANNER_APP_NAME }}.</p>
+<div class="line">
+</div>
+{% include 'forms/user_input_form.html' %}
+{% endblock%}
