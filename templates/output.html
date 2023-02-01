@@ -1,0 +1,191 @@
+{% extends 'base.html' %}
+
+{% block container %}
+<!-- user name -->
+<div class="row">
+    <h2>User: <strong>{{ name }}</strong></h2>
+    <div class="col-md-8">
+        <h3>Image Analysis</h3>
+        <h4>Age: <strong>{{ age }}</strong></h4>
+        <h4>Dominant gender: <strong>{{ dominant_gender }}</strong></h4>
+        <h4>Dominant emotion: <strong>{{ dominant_emotion }}</strong></h4>
+        <h4>Dominant race: <strong>{{ dominant_race }}</strong></h4>
+    </div>
+    <div class="col-md-4 h-100">
+        <div class="row h-25 d-flex justify-content-center align-items-center">
+            <div class="col h-100">
+                <img style="max-height: 128px;" src="{{ url_for('static',filename=image_filename) }}" alt="Uploaded image" class="img-thumbnail">
+            </div>
+        </div>
+        <div class="row h-25">
+            <canvas id="genderChart" width="200" height="200"></canvas>
+        </div>
+    </div>
+</div>
+
+<!-- Visualizing data -->
+<div class="row">
+    <div class="col-md-12">
+        <h1>Data Visualizations</h1>
+        <!-- First row of charts -->
+        <div class="row">
+            <div class="col-md-6">
+                <canvas id="raceChart" width="400" height="400"></canvas>
+            </div>
+            <div class="col-md-6">
+                <canvas id="emotionChart" width="400" height="400"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Response object in JSON -->
+<div class="row">
+{{ resp_obj|safe }}
+</div>
+{% endblock%}
+
+<!-- No more HTML code after this point -->
+<!-- End of docuument -->
+<!-- Start of chartjs scripts -->
+<!--  -->
+<!-- Chart js -->
+{% block chartjs_block %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<!-- First Chart -->
+<!-- Race Confidence Factor Charts -->
+<script>
+    const ctx = document.getElementById('raceChart').getContext('2d');
+    var race_keys = [{% for item in race_keys %} '{{ item }}', {% endfor %}]
+    var race_values = [{% for item in race_values %} {{ item }}, {% endfor %}]
+    const myChart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: race_keys,
+            datasets: [{
+                label: 'Confidence Factors',
+                data: race_values,
+                backgroundColor: [
+                'rgba(255, 99, 132, 0.2)',
+                'rgba(54, 162, 235, 0.2)',
+                'rgba(255, 206, 86, 0.2)',
+                'rgba(75, 192, 192, 0.2)',
+                'rgba(153, 102, 255, 0.2)',
+                'rgba(255, 159, 64, 0.2)'
+                ],
+                borderColor: [
+                'rgba(255, 99, 132, 1)',
+                'rgba(54, 162, 235, 1)',
+                'rgba(255, 206, 86, 1)',
+                'rgba(75, 192, 192, 1)',
+                'rgba(153, 102, 255, 1)',
+                'rgba(255, 159, 64, 1)'
+                ],
+                borderWidth: 1
+            }]
+        },
+        options: {
+            scales: {
+                y: {
+                    beginAtZero: true
+                }
+            }
+        }
+    });
+</script>
+<!-- Second Chart -->
+<!-- Emotion Confidence Factor Chart -->
+<script>
+    const ctx2 = document.getElementById('emotionChart').getContext('2d');
+    var emotions_keys = [{% for item in emotions_keys %} '{{ item }}', {% endfor %}]
+    var emotions_values = [{% for item in emotions_values %} {{ item }}, {% endfor %}]
+    const myChart2 = new Chart(ctx2, {
+        type: 'bar',
+        data: {
+            labels: emotions_keys,
+            datasets: [{
+                label: 'Confidence Factors',
+                data: emotions_values,
+                backgroundColor: [
+                'rgba(255, 99, 132, 0.2)',
+                'rgba(54, 162, 235, 0.2)',
+                'rgba(255, 206, 86, 0.2)',
+                'rgba(75, 192, 192, 0.2)',
+                'rgba(153, 102, 255, 0.2)',
+                'rgba(255, 159, 64, 0.2)'
+                ],
+                borderColor: [
+                'rgba(255, 99, 132, 1)',
+                'rgba(54, 162, 235, 1)',
+                'rgba(255, 206, 86, 1)',
+                'rgba(75, 192, 192, 1)',
+                'rgba(153, 102, 255, 1)',
+                'rgba(255, 159, 64, 1)'
+                ],
+                borderWidth: 1
+            }]
+        },
+        options: {
+            scales: {
+                y: {
+                    beginAtZero: true
+                }
+            }
+        }
+    });
+</script>
+<!-- Third Chart -->
+<!-- Gender horizontal bar Confidence Factor Chart -->
+<script>
+    const ctx3 = document.getElementById('genderChart').getContext('2d');
+    var gender_keys = [{% for item in gender_keys %} '{{ item }}', {% endfor %}]
+    var gender_values = [{% for item in gender_values %} {{ item }}, {% endfor %}]
+    const myChart3 = new Chart(ctx3, {
+        type: 'bar',
+        data: {
+            labels: gender_keys,
+            datasets: [{
+                label: 'Confidence Factors',
+                data: gender_values,
+                backgroundColor: [
+                'rgba(255, 99, 132, 0.2)',
+                'rgba(54, 162, 235, 0.2)',
+                'rgba(255, 206, 86, 0.2)',
+                'rgba(75, 192, 192, 0.2)',
+                'rgba(153, 102, 255, 0.2)',
+                'rgba(255, 159, 64, 0.2)'
+                ],
+                borderColor: [
+                'rgba(255, 99, 132, 1)',
+                'rgba(54, 162, 235, 1)',
+                'rgba(255, 206, 86, 1)',
+                'rgba(75, 192, 192, 1)',
+                'rgba(153, 102, 255, 1)',
+                'rgba(255, 159, 64, 1)'
+                ],
+                borderWidth: 1
+            }]
+        },
+        options: {
+            indexAxis: 'y',
+            maintainAspectRatio: false,
+            elements: {
+                bar: {
+                    borderWidth: 2,
+                }
+            },
+            responsive: true,
+            plugins: {
+                legend: {
+                    position: 'right',
+                },
+            },
+            scales: {
+                y: {
+                    beginAtZero: true
+                }
+            }
+        }
+    });
+</script>
+{% endblock %}

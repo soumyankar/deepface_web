@@ -3,11 +3,35 @@ warnings.filterwarnings("ignore")
 
 import os
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
+#------------------------------
+# Stuff I need for the templates
+from forms.input_form import userInputForm
+
+#-------------------------------
+# stuff I need for other essential things
+import requests
+from json2html import *
+from urllib.parse import unquote
+from os.path import join, dirname, realpath
+UPLOADS_PATH = join(dirname(realpath(__file__)), 'static/uploads/')
+ALLOWED_EXTENSIONS = {'txt', 'pdf', 'png', 'jpg', 'jpeg', 'gif'}
+def allowed_file(filename):
+    return '.' in filename and \
+           filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
 #------------------------------
+# Enconding a base64 and returning as ascii
+import base64
+from base64 import b64encode
+from json import dumps
+ENCODING = 'utf-8'
+def b64EncodeString(msg):
+    msg_bytes = msg.encode('ascii')
+    base64_bytes = base64.b64encode(msg_bytes)
+    return base64_bytes.decode('ascii')
+#------------------------------
 
-from flask import Flask, jsonify, request, make_response
-
+from flask import Flask, jsonify, request, make_response, render_template, redirect, url_for
 import argparse
 import uuid
 import json
@@ -32,6 +56,8 @@ from deepface import DeepFace
 #------------------------------
 
 app = Flask(__name__)
+# Load common settings
+app.config.from_object('settings')
 
 #------------------------------
 
@@ -41,10 +67,80 @@ if tf_version == 1:
 #------------------------------
 #Service API Interface
 
-@app.route('/')
+@app.route('/', methods=['GET', 'POST'])
 def index():
-	return '<h1>Hello, world!</h1>'
+	form = userInputForm()
+	if request.method == 'POST' and form.validate():
+		name = form.inputName.data
+		face = form.inputImage.data
+		face_filename_extension = face.filename.split('.')[-1]
+		uuid_append = str(uuid.uuid4())
+		filename = name+"_"+uuid_append+"."+face_filename_extension
+		face.save((UPLOADS_PATH + filename))
+		with open(UPLOADS_PATH+filename, "rb") as image_file:
+			face_base64 = base64.b64encode(image_file.read())
+			# third: decode these bytes to text
+			# result: string (in utf-8)
+			face_base64_string = face_base64.decode(ENCODING)
+			face_base64 = "data:image/jpeg;base64,"+ face_base64_string# adding data type and converting the base64 to string
+			face_base64 = [face_base64]
+			json_request = {"img": face_base64}
 
+		json_data = dumps(json_request, indent=2)
+		headers = {'Content-Type': 'application/json'}
+
+		resp_obj = requests.post(url=url_for('analyze', _external=True), data=json_data, headers=headers)
+		resp_obj = json.loads(resp_obj.text) # this is a json object, like a dict
+		# converting to pretty print json
+		resp_obj = json.dumps(resp_obj, indent=4)
+		return redirect(url_for('output', name=name, resp_obj=resp_obj, filename=filename))
+	return render_template('index.html', form = form)
+
+@app.route("/output", methods=['GET', 'POST'])
+def output():
+	name = request.args['name']
+	json_obj = request.args['resp_obj']
+	image_filename = 'uploads/'+request.args['filename']
+	resp_obj = json.loads(json_obj)
+
+	# just to take a good look at the response object from deepface.
+	print(json.dumps(resp_obj, indent=4))
+	
+	age = resp_obj['demographies']['img_1'][0]['age']
+	dominant_emotion = resp_obj['demographies']['img_1'][0]['dominant_emotion']
+	dominant_gender = resp_obj['demographies']['img_1'][0]['dominant_gender']
+	dominant_race = resp_obj['demographies']['img_1'][0]['dominant_race']
+	emotions_keys = (resp_obj['demographies']['img_1'][0]['emotion']).keys()
+	emotions_values = (resp_obj['demographies']['img_1'][0]['emotion']).values()
+	race = (resp_obj['demographies']['img_1'][0]['race']).items()
+	race_keys = (resp_obj['demographies']['img_1'][0]['race']).keys()
+	race_values = (resp_obj['demographies']['img_1'][0]['race']).values()
+	gender_keys = (resp_obj['demographies']['img_1'][0]['gender']).keys()
+	gender_values = (resp_obj['demographies']['img_1'][0]['gender']).values()
+
+	resp_obj = json2html.convert(
+		json = resp_obj, 
+		clubbing = False, 
+		table_attributes="id=\"info-table\" class=\"table table-bordered table-hover\"")
+
+	return render_template('output.html', 
+	name=name, 
+	resp_obj=resp_obj, 
+	image_filename=image_filename,
+	age=age,
+	dominant_emotion=dominant_emotion,
+	dominant_gender=dominant_gender,
+	dominant_race=dominant_race,
+	emotions_keys=emotions_keys,
+	emotions_values=emotions_values,
+	race_keys=race_keys,
+	race_values=race_values,
+	gender_keys=gender_keys,
+	gender_values=gender_values,
+	race=race)
+
+#-----------------------------
+#-----------------------------
 @app.route('/analyze', methods=['POST'])
 def analyze():
 
@@ -305,4 +401,4 @@ if __name__ == '__main__':
 		default=5000,
 		help='Port of serving api')
 	args = parser.parse_args()
-	app.run(host='0.0.0.0', port=args.port)
+	app.run(host='0.0.0.0', port=args.port, debug=True)
